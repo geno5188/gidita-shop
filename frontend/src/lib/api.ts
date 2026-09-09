@@ -6,7 +6,9 @@ import type {
 } from '@/lib/types'
 import { fallbackCollections, fallbackProducts } from '@/data/fallback'
 
-const BASE = '/api'
+// 上线后通过 VITE_API_URL 指向 Render 后端；本地开发仍走相对路径 /api（由 Vite 代理转发）
+const API_BASE = import.meta.env.VITE_API_URL as string | undefined
+const BASE = API_BASE ? `${API_BASE.replace(/\/$/, '')}/api` : '/api'
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
