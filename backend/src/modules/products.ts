@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 import { pool } from '../config/db'
 
-export const productsRouter = Router()
+export const productsRouter: Router = Router()
 
 type ProductRow = {
   id: string
@@ -49,7 +49,7 @@ productsRouter.get('/', async (_req: Request, res: Response) => {
   const { rows } = await pool.query(
     `${PRODUCT_SELECT} GROUP BY p.id ORDER BY p."createdAt" DESC`,
   )
-  res.json(rows.map(mapProduct))
+  return res.json(rows.map(mapProduct))
 })
 
 productsRouter.get('/:handle', async (req: Request, res: Response) => {
@@ -58,5 +58,5 @@ productsRouter.get('/:handle', async (req: Request, res: Response) => {
     [req.params.handle],
   )
   if (!rows.length) return res.status(404).json({ error: 'Product not found' })
-  res.json(mapProduct(rows[0]))
+  return res.json(mapProduct(rows[0]))
 })

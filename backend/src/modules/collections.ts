@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express'
 import { pool } from '../config/db'
 
-export const collectionsRouter = Router()
+export const collectionsRouter: Router = Router()
 
 type CollectionRow = {
   id: string
@@ -32,7 +32,7 @@ collectionsRouter.get('/', async (_req: Request, res: Response) => {
      GROUP BY c.id
      ORDER BY c."createdAt"`,
   )
-  res.json(rows.map(mapCollection))
+  return res.json(rows.map(mapCollection))
 })
 
 collectionsRouter.get('/:handle', async (req: Request, res: Response) => {
@@ -73,5 +73,5 @@ collectionsRouter.get('/:handle', async (req: Request, res: Response) => {
     createdAt: r.createdAt,
   }))
 
-  res.json({ ...mapCollection(colRes.rows[0]), products })
+  return res.json({ ...mapCollection(colRes.rows[0]), products })
 })

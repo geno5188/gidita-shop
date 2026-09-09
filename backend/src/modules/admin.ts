@@ -4,7 +4,7 @@ import { pool } from '../config/db'
 import { env } from '../config/env'
 import { requireAdmin, signAdminToken } from '../middleware/auth'
 
-export const adminRouter = Router()
+export const adminRouter: Router = Router()
 
 /* ---------------- Auth ---------------- */
 
@@ -16,12 +16,12 @@ adminRouter.post('/login', async (req: Request, res: Response) => {
   if (parsed.data.password !== env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Invalid password' })
   }
-  res.json({ token: signAdminToken() })
+  return res.json({ token: signAdminToken() })
 })
 
 /* ---------------- Products (admin) ---------------- */
 
-const adminProductsRouter = Router()
+const adminProductsRouter: Router = Router()
 adminProductsRouter.use(requireAdmin)
 
 const productInput = z.object({
@@ -73,7 +73,7 @@ adminProductsRouter.get('/', async (_req: Request, res: Response) => {
     status: r.status,
     createdAt: r.createdAt,
   }))
-  res.json(mapped)
+  return res.json(mapped)
 })
 
 adminProductsRouter.post('/', async (req: Request, res: Response) => {
@@ -104,10 +104,11 @@ adminProductsRouter.post('/', async (req: Request, res: Response) => {
   const productId = result.rows[0].id
   await pool.query('DELETE FROM product_collections WHERE "productId" = $1', [productId])
   await linkCollections(productId, parsed.collectionHandles)
-  res.status(201).json({ id: productId, handle })
+  return res.status(201).json({ id: productId, handle })
 })
 
 adminProductsRouter.put('/:id', async (req: Request, res: Response) => {
+  const id = req.params.id as string
   const parsed = productInput.parse(req.body)
   const images = parsed.images?.length ? parsed.images : parsed.image ? [parsed.image] : []
   const result = await pool.query(
@@ -116,7 +117,7 @@ adminProductsRouter.put('/:id', async (req: Request, res: Response) => {
        image = $7, images = $8, status = $9
      WHERE id = $1 RETURNING id`,
     [
-      req.params.id,
+      id,
       parsed.name,
       parsed.tag ?? null,
       parsed.description ?? null,
@@ -128,22 +129,22 @@ adminProductsRouter.put('/:id', async (req: Request, res: Response) => {
     ],
   )
   if (!result.rows.length) return res.status(404).json({ error: 'Product not found' })
-  await pool.query('DELETE FROM product_collections WHERE "productId" = $1', [req.params.id])
-  await linkCollections(req.params.id, parsed.collectionHandles)
-  res.json({ id: req.params.id })
+  await pool.query('DELETE FROM product_collections WHERE "productId" = $1', [id])
+  await linkCollections(id, parsed.collectionHandles)
+  return res.json({ id })
 })
 
 adminProductsRouter.delete('/:id', async (req: Request, res: Response) => {
   const result = await pool.query('DELETE FROM products WHERE id = $1 RETURNING id', [req.params.id])
   if (!result.rows.length) return res.status(404).json({ error: 'Product not found' })
-  res.json({ success: true })
+  return res.json({ success: true })
 })
 
 adminRouter.use('/products', adminProductsRouter)
 
 /* ---------------- Collections (admin) ---------------- */
 
-const adminCollectionsRouter = Router()
+const adminCollectionsRouter: Router = Router()
 adminCollectionsRouter.use(requireAdmin)
 
 const collectionInput = z.object({
@@ -160,7 +161,7 @@ adminCollectionsRouter.get('/', async (_req: Request, res: Response) => {
      LEFT JOIN product_collections pc ON pc."collectionId" = c.id
      GROUP BY c.id ORDER BY c."createdAt"`,
   )
-  res.json(
+  return res.json(
     rows.map((r: any) => ({
       id: r.id,
       handle: r.handle,
@@ -182,7 +183,7 @@ adminCollectionsRouter.post('/', async (req: Request, res: Response) => {
      RETURNING id, handle`,
     [handle, parsed.name, parsed.description ?? null, parsed.image ?? null],
   )
-  res.status(201).json({ id: result.rows[0].id, handle: result.rows[0].handle })
+  return res.status(201).json({ id: result.rows[0].id, handle: result.rows[0].handle })
 })
 
 adminCollectionsRouter.put('/:id', async (req: Request, res: Response) => {
@@ -192,13 +193,13 @@ adminCollectionsRouter.put('/:id', async (req: Request, res: Response) => {
     [req.params.id, parsed.name, parsed.description ?? null, parsed.image ?? null],
   )
   if (!result.rows.length) return res.status(404).json({ error: 'Collection not found' })
-  res.json({ id: req.params.id })
+  return res.json({ id: req.params.id })
 })
 
 adminCollectionsRouter.delete('/:id', async (req: Request, res: Response) => {
   const result = await pool.query('DELETE FROM collections WHERE id = $1 RETURNING id', [req.params.id])
   if (!result.rows.length) return res.status(404).json({ error: 'Collection not found' })
-  res.json({ success: true })
+  return res.json({ success: true })
 })
 
 adminRouter.use('/collections', adminCollectionsRouter)

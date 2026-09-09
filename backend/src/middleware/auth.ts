@@ -16,7 +16,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const token = header.slice('Bearer '.length)
   try {
     jwt.verify(token, env.JWT_SECRET)
-    next()
+    return next()
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' })
   }
